@@ -1,0 +1,39 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>{{ name }}'s Bingo Cards</title>
+<style>
+body { font-family: Arial; background:#eef7ff; padding:20px; }
+.cards { display:flex; flex-wrap:wrap; justify-content:center; gap:20px; }
+.card { background:white; padding:10px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.2); }
+table { border-collapse:collapse; }
+th, td {
+ border:1px solid #333; width:45px; height:45px;
+ text-align:center; font-size:18px; cursor:pointer;
+}
+th { background:#7d4fff; color:white; }
+td.marked { background:turquoise; color:purple; font-weight:bold; }
+</style>
+<script>
+function toggle(cell){ cell.classList.toggle("marked"); }
+</script>
+</head>
+<body>
+<h2>{{ name }} — {{ count }} Bingo Card(s)</h2>
+<div class="cards">
+{% for card in cards %}
+<div class="card">
+<table>
+<tr>{% for l in ["B","I","N","G","O"] %}<th>{{ l }}</th>{% endfor %}</tr>
+{% for i in range(5) %}
+<tr>{% for l in ["B","I","N","G","O"] %}
+<td onclick="toggle(this)">{{ card[l][i] }}</td>
+{% endfor %}</tr>
+{% endfor %}
+</table>
+</div>
+{% endfor %}
+</div>
+</body>
+</html>

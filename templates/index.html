@@ -1,0 +1,23 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>Bingo Generator</title>
+<style>
+body { font-family: Arial; background:#f0e8ff; text-align:center; padding-top:40px; }
+input, button {
+ padding:12px; margin:10px; border-radius:8px;
+ border:2px solid #7d4fff; font-size:16px;
+}
+button { background:#7d4fff; color:white; }
+</style>
+</head>
+<body>
+<h1>🎉 Create Your Bingo Cards 🎉</h1>
+<form method="POST">
+<input name="name" placeholder="Player name" required><br>
+<input name="count" type="number" min="1" max="10" value="1"><br>
+<button type="submit">Generate My Cards</button>
+</form>
+</body>
+</html>
