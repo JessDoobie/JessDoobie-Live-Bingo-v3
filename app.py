@@ -48,7 +48,8 @@ def index():
 
 
 # -----------------------------
-# SHORT LINK → PLAY
+# SHORT LINK → PLAY (PUBLIC)
+# https://your-site.onrender.com/play
 # -----------------------------
 @app.route("/play")
 def play():
@@ -56,9 +57,10 @@ def play():
 
 
 # -----------------------------
-# PRIVATE CALLER PAGE
+# PRIVATE CALLER PAGE (HIDDEN)
+# https://your-site.onrender.com/bingo-admin
 # -----------------------------
-@app.route("/caller")
+@app.route("/bingo-admin")
 def caller():
     return render_template("caller.html")
 
