@@ -2,82 +2,70 @@
 <html>
 <head>
   <title>Your Bingo Cards</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #ffffff;
+      background: #f0e8ff;
       text-align: center;
+      padding-bottom: 40px;
     }
+
     .cards {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 20px;
+      gap: 24px;
     }
+
+    .card {
+      background: white;
+      padding: 12px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
     table {
       border-collapse: collapse;
-      margin: 10px;
+      margin: 10px auto;
     }
-    th, td {
-      border: 1px solid #333;
-      width: 40px;
-      height: 40px;
-      text-align: center;
-      cursor: pointer;
-    }
-    td.marked {
+
+    th {
       background: #7d4fff;
       color: white;
+      padding: 8px;
+      font-size: 18px;
     }
-  <style>
-  body {
-    font-family: Arial, sans-serif;
-    background: #f0e8ff;
-    text-align: center;
-  }
 
-  .cards {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 24px;
-  }
+    td {
+      border: 1px solid #333;
+      width: 42px;
+      height: 42px;
+      text-align: center;
+      cursor: pointer;
+      background: #ffffff;
+      font-weight: bold;
+    }
 
-  .card {
-    background: white;
-    padding: 12px;
-    border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-  }
+    td.marked {
+      background: #2ec4b6;
+      color: white;
+    }
 
-  table {
-    border-collapse: collapse;
-    margin: 10px auto;
-  }
+    /* 👇 FOOTER STYLES */
+    .site-footer {
+      margin-top: 40px;
+      padding: 15px 10px;
+      font-size: 0.85rem;
+      color: #666;
+      border-top: 1px solid #ddd;
+    }
 
-  th {
-    background: #7d4fff;
-    color: white;
-    padding: 8px;
-    font-size: 18px;
-  }
-
-  td {
-    border: 1px solid #333;
-    width: 42px;
-    height: 42px;
-    text-align: center;
-    cursor: pointer;
-    background: #ffffff;
-    font-weight: bold;
-  }
-
-  td.marked {
-    background: #2ec4b6; /* turquoise */
-    color: white;
-  }
-</style>
-
+    .site-footer p {
+      margin: 0;
+      line-height: 1.4;
+    }
+  </style>
 
   <script>
     function toggle(cell) {
@@ -88,7 +76,7 @@
 
 <body>
 
-  <h2>Your Bingo Cards</h2>
+  <h2>🎴 Your Bingo Cards</h2>
 
   <div class="cards">
     {% for card in cards %}
@@ -115,6 +103,14 @@
     {% endfor %}
   </div>
 
+  <!-- 👇 FOOTER DISCLAIMER -->
+  <footer class="site-footer">
+    <p>
+      This Bingo game is played during livestreams for entertainment only.<br>
+      Participation is free, and no purchases or gifts are required to play.<br>
+      Players interact through chat while using this site to follow along.
+    </p>
+  </footer>
+
 </body>
 </html>
-
