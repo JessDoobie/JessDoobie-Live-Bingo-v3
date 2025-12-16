@@ -49,7 +49,6 @@ def index():
 
 # -----------------------------
 # SHORT LINK → PLAY
-# https://your-site.onrender.com/play
 # -----------------------------
 @app.route("/play")
 def play():
@@ -57,11 +56,16 @@ def play():
 
 
 # -----------------------------
-# OPTIONAL: SHORT LINK → DISCORD
-# https://your-site.onrender.com/discord
+# PRIVATE CALLER PAGE
 # -----------------------------
-# Uncomment this section when ready
-#
+@app.route("/caller")
+def caller():
+    return render_template("caller.html")
+
+
+# -----------------------------
+# OPTIONAL: SHORT LINK → DISCORD
+# -----------------------------
 # DISCORD_INVITE_URL = "https://discord.gg/YOURCODE"
 #
 # @app.route("/discord")
