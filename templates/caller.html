@@ -11,6 +11,19 @@
       padding: 20px;
     }
 
+    /* TOP DISCLAIMER */
+    .disclaimer {
+      background: #fff3cd;
+      border: 2px solid #ffeeba;
+      color: #6c5700;
+      font-weight: bold;
+      padding: 12px;
+      border-radius: 10px;
+      max-width: 600px;
+      margin: 0 auto 20px auto;
+      font-size: 15px;
+    }
+
     h1 {
       margin-bottom: 10px;
     }
@@ -83,19 +96,16 @@
       color: white;
       cursor: default;
     }
-
-    /* Footer */
-    .site-footer {
-      margin-top: 40px;
-      font-size: 0.85rem;
-      color: #666;
-      border-top: 1px solid #ddd;
-      padding-top: 10px;
-    }
   </style>
 </head>
 
 <body>
+
+  <!-- 🔒 TOP DISCLAIMER -->
+  <div class="disclaimer">
+    This Bingo game is played during livestreams for entertainment only.<br>
+    Participation is free. No purchases, gifts, prizes, or monetary value.
+  </div>
 
   <h1>🎱 Bingo Caller</h1>
 
@@ -107,10 +117,6 @@
   <button class="reset-btn" onclick="resetBoard()">Reset Board</button>
 
   <div class="board" id="board"></div>
-
-  <footer class="site-footer">
-    Free to play • Entertainment only • No prizes or monetary value
-  </footer>
 
   <script>
     const ranges = {
@@ -180,12 +186,4 @@
     }
 
     function resetBoard() {
-      if (!confirm("Reset all called numbers?")) return;
-      initBoard();
-    }
-
-    initBoard();
-  </script>
-
-</body>
-</html>
+      if (!confirm("Reset all called numbers?")) retu
