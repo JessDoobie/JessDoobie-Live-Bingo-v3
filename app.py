@@ -1,8 +1,11 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for
 import random
 
 app = Flask(__name__)
 
+# -----------------------------
+# Bingo Card Generator
+# -----------------------------
 def generate_card():
     card = {}
     ranges = {
@@ -20,6 +23,9 @@ def generate_card():
     return card
 
 
+# -----------------------------
+# Home / Bingo Page
+# -----------------------------
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
@@ -39,11 +45,32 @@ def index():
         return render_template("cards.html", name=name, cards=cards)
 
     return render_template("index.html")
-@app.route("/about")
-def about():
-    return render_template("about.html")
 
 
+# -----------------------------
+# SHORT LINK → PLAY
+# https://your-site.onrender.com/play
+# -----------------------------
+@app.route("/play")
+def play():
+    return redirect(url_for("index"))
+
+
+# -----------------------------
+# OPTIONAL: SHORT LINK → DISCORD
+# https://your-site.onrender.com/discord
+# -----------------------------
+# Uncomment this section when ready
+#
+# DISCORD_INVITE_URL = "https://discord.gg/YOURCODE"
+#
+# @app.route("/discord")
+# def discord():
+#     return redirect(DISCORD_INVITE_URL)
+
+
+# -----------------------------
+# Run App
+# -----------------------------
 if __name__ == "__main__":
     app.run()
-
