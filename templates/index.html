@@ -1,81 +1,30 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Bingo Card Generator</title>
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    background: #f0e8ff;
-    color: #4b2e83;
-    text-align: center;
-    padding-top: 40px;
-  }
+{% extends "base.html" %}
 
-  input, button {
-    padding: 12px;
-    margin: 10px;
-    border-radius: 8px;
-    border: 2px solid #7d4fff;
-    font-size: 16px;
-  }
+{% block content %}
 
-  button {
-    background: #7d4fff;
-    color: white;
-    cursor: pointer;
-  }
+<h1>🎉 Bingo Night 🎉</h1>
 
-  /* 👇 FOOTER STYLES (THIS IS STEP 4) */
-  .site-footer {
-    margin-top: 40px;
-    padding: 15px 10px;
-    font-size: 0.85rem;
-    color: #666;
-    border-top: 1px solid #ddd;
-  }
+<p>
+  Each player creates <strong>their own bingo cards</strong> on their own device.
+  <br>
+  You will not see anyone else’s cards.
+</p>
 
-  .site-footer p {
-    margin: 0;
-    line-height: 1.4;
-  }
-</style>
+<p>
+  👉 Enter <strong>your name</strong><br>
+  👉 Choose how many cards <strong>you</strong> want (1–10)
+</p>
 
-</head>
+<form method="POST">
+  <input name="name" placeholder="Your name" required><br>
+  <input name="count" type="number" min="1" max="10" value="1"><br>
+  <button type="submit">Generate My Cards</button>
+</form>
 
-<body>
+<p style="margin-top: 25px; font-size: 14px;">
+  💡 If you get BINGO, take a screenshot of your card  
+  <br>
+  and share the <strong>Card ID</strong> with the host.
+</p>
 
-  <h1>🎉 Doobie Bingo 🎉</h1>
-
-  <p>
-    Each player creates <strong>their own bingo cards</strong> on their own device.
-    <br>
-    You will not see anyone else’s cards.
-  </p>
-
-  <p>
-    👉 Enter <strong>your name</strong><br>
-    👉 Choose how many cards <strong>you</strong> want (1–10)
-  </p>
-
-  <form method="POST">
-    <input name="name" placeholder="Your name" required><br>
-    <input name="count" type="number" min="1" max="10" value="1"><br>
-    <button type="submit">Generate My Cards</button>
-  </form>
-
-  <p style="margin-top: 25px; font-size: 14px;">
-    💡 If you get BINGO, take a screenshot of your winning card
-    <br>
-    and share the <strong>Card ID</strong> with the host.
-  </p>
-<footer class="site-footer">
-  <p>
-    This Bingo game is played during livestreams for entertainment only.<br>
-    Participation is free, and no purchases or gifts are required to play.<br>
-    Players interact through chat while using this site to follow along.
-  </p>
-</footer>
-
-</body>
-</html>
-
+{% endblock %}
