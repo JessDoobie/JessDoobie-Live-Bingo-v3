@@ -19,7 +19,7 @@
       font-weight: bold;
       padding: 12px;
       border-radius: 10px;
-      max-width: 600px;
+      max-width: 640px;
       margin: 0 auto 20px auto;
       font-size: 15px;
     }
@@ -28,7 +28,7 @@
       margin-bottom: 10px;
     }
 
-    /* Current Ball */
+    /* CURRENT BALL DISPLAY */
     .current-ball {
       font-size: 48px;
       font-weight: bold;
@@ -40,9 +40,9 @@
       width: 260px;
     }
 
-    /* Buttons */
+    /* BUTTONS */
     button {
-      padding: 12px 20px;
+      padding: 12px 22px;
       font-size: 18px;
       border-radius: 10px;
       border: none;
@@ -60,12 +60,12 @@
       color: white;
     }
 
-    /* Board */
+    /* BOARD */
     .board {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
       gap: 10px;
-      max-width: 500px;
+      max-width: 520px;
       margin: 30px auto;
     }
 
@@ -89,6 +89,7 @@
       border-radius: 6px;
       cursor: pointer;
       background: #eee;
+      font-weight: bold;
     }
 
     .ball.called {
@@ -101,7 +102,7 @@
 
 <body>
 
-  <!-- 🔒 TOP DISCLAIMER -->
+  <!-- 🔒 DISCLAIMER -->
   <div class="disclaimer">
     This Bingo game is played during livestreams for entertainment only.<br>
     Participation is free. No purchases, gifts, prizes, or monetary value.
@@ -109,15 +110,17 @@
 
   <h1>🎱 Bingo Caller</h1>
 
-  <div class="current-ball" id="currentBall">
-    —
-  </div>
+  <!-- CURRENT BALL -->
+  <div class="current-ball" id="currentBall">—</div>
 
+  <!-- CONTROLS -->
   <button class="call-btn" onclick="callNextBall()">Call Next Ball</button>
   <button class="reset-btn" onclick="resetBoard()">Reset Board</button>
 
+  <!-- BOARD -->
   <div class="board" id="board"></div>
 
+  <!-- SCRIPT -->
   <script>
     const ranges = {
       B: [1, 15],
@@ -138,24 +141,24 @@
       document.getElementById("currentBall").innerText = "—";
 
       for (const letter in ranges) {
-        const col = document.createElement("div");
-        col.className = "column";
+        const column = document.createElement("div");
+        column.className = "column";
 
         const header = document.createElement("h3");
-        header.innerText = letter;
-        col.appendChild(header);
+        header.textContent = letter;
+        column.appendChild(header);
 
         for (let i = ranges[letter][0]; i <= ranges[letter][1]; i++) {
           const cell = document.createElement("div");
           cell.className = "ball";
-          cell.innerText = `${letter}-${i}`;
-          cell.onclick = () => manualCall(cell.innerText);
-          col.appendChild(cell);
+          cell.textContent = `${letter}-${i}`;
+          cell.addEventListener("click", () => manualCall(`${letter}-${i}`));
+          column.appendChild(cell);
 
           availableNumbers.push(`${letter}-${i}`);
         }
 
-        board.appendChild(col);
+        board.appendChild(column);
       }
     }
 
@@ -179,11 +182,20 @@
       document.getElementById("currentBall").innerText = ball;
 
       document.querySelectorAll(".ball").forEach(el => {
-        if (el.innerText === ball) {
+        if (el.textContent === ball) {
           el.classList.add("called");
         }
       });
     }
 
     function resetBoard() {
-      if (!confirm("Reset all called numbers?")) retu
+      if (!confirm("Reset all called numbers?")) return;
+      initBoard();
+    }
+
+    // 🚀 INITIALIZE
+    initBoard();
+  </script>
+
+</body>
+</html>
