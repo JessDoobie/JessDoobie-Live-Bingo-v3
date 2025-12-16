@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Bingo Caller</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0e8ff;
+      text-align: center;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    /* Current Ball */
+    .current-ball {
+      font-size: 48px;
+      font-weight: bold;
+      background: #7d4fff;
+      color: white;
+      padding: 20px;
+      border-radius: 16px;
+      margin: 20px auto;
+      width: 260px;
+    }
+
+    /* Buttons */
+    button {
+      padding: 12px 20px;
+      font-size: 18px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      margin: 10px;
+    }
+
+    .call-btn {
+      background: #2ec4b6;
+      color: white;
+    }
+
+    .reset-btn {
+      background: #ff6b6b;
+      color: white;
+    }
+
+    /* Board */
+    .board {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      max-width: 500px;
+      margin: 30px auto;
+    }
+
+    .column {
+      background: white;
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    .column h3 {
+      background: #7d4fff;
+      color: white;
+      border-radius: 8px;
+      margin: 0 0 8px 0;
+      padding: 5px;
+    }
+
+    .ball {
+      padding: 6px;
+      margin: 4px 0;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #eee;
+    }
+
+    .ball.called {
+      background: #7d4fff;
+      color: white;
+      cursor: default;
+    }
+
+    /* Footer */
+    .site-footer {
+      margin-top: 40px;
+      font-size: 0.85rem;
+      color: #666;
+      border-top: 1px solid #ddd;
+      padding-top: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>🎱 Bingo Caller</h1>
+
+  <div class="current-ball" id="currentBall">
+    —
+  </div>
+
+  <button class="call-btn" onclick="callNextBall()">Call Next Ball</button>
+  <button class="reset-btn" onclick="resetBoard()">Reset Board</button>
+
+  <div class="board" id="board"></div>
+
+  <footer class="site-footer">
+    Free to play • Entertainment only • No prizes or monetary value
+  </footer>
+
+  <script>
+    const ranges = {
+      B: [1, 15],
+      I: [16, 30],
+      N: [31, 45],
+      G: [46, 60],
+      O: [61, 75]
+    };
+
+    let availableNumbers = [];
+    let calledNumbers = new Set();
+
+    function initBoard() {
+      const board = document.getElementById("board");
+      board.innerHTML = "";
+      availableNumbers = [];
+      calledNumbers.clear();
+      document.getElementById("currentBall").innerText = "—";
+
+      for (const letter in ranges) {
+        const col = document.createElement("div");
+        col.className = "column";
+
+        const header = document.createElement("h3");
+        header.innerText = letter;
+        col.appendChild(header);
+
+        for (let i = ranges[letter][0]; i <= ranges[letter][1]; i++) {
+          const cell = document.createElement("div");
+          cell.className = "ball";
+          cell.innerText = `${letter}-${i}`;
+          cell.onclick = () => manualCall(cell.innerText);
+          col.appendChild(cell);
+
+          availableNumbers.push(`${letter}-${i}`);
+        }
+
+        board.appendChild(col);
+      }
+    }
+
+    function callNextBall() {
+      if (availableNumbers.length === 0) return;
+
+      const index = Math.floor(Math.random() * availableNumbers.length);
+      const ball = availableNumbers.splice(index, 1)[0];
+      markCalled(ball);
+    }
+
+    function manualCall(ball) {
+      if (calledNumbers.has(ball)) return;
+
+      availableNumbers = availableNumbers.filter(b => b !== ball);
+      markCalled(ball);
+    }
+
+    function markCalled(ball) {
+      calledNumbers.add(ball);
+      document.getElementById("currentBall").innerText = ball;
+
+      document.querySelectorAll(".ball").forEach(el => {
+        if (el.innerText === ball) {
+          el.classList.add("called");
+        }
+      });
+    }
+
+    function resetBoard() {
+      if (!confirm("Reset all called numbers?")) return;
+      initBoard();
+    }
+
+    initBoard();
+  </script>
+
+</body>
+</html>
