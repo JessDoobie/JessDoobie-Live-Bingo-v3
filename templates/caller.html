@@ -61,6 +61,17 @@
       color: white;
     }
 
+    /* NEW: AUTO BUTTONS */
+    .auto-btn {
+      background: #7d4fff;
+      color: white;
+    }
+
+    .stop-btn {
+      background: #555;
+      color: white;
+    }
+
     /* BOARD */
     .board {
       display: grid;
@@ -100,6 +111,14 @@
       color: white;
       cursor: default;
     }
+
+    /* NEW: Small status text */
+    .status {
+      font-size: 13px;
+      color: #4b2e83;
+      margin-top: 4px;
+      opacity: 0.9;
+    }
   </style>
 </head>
 
@@ -115,7 +134,14 @@
   <div class="current-ball" id="currentBall">—</div>
 
   <button class="call-btn" onclick="callNextBall()">Call Next Ball</button>
+
+  <!-- NEW: Auto-call controls -->
+  <button class="auto-btn" onclick="startAutoCall()">▶ Start Auto Call (30s)</button>
+  <button class="stop-btn" onclick="stopAutoCall()">⏸ Stop Auto Call</button>
+
   <button class="reset-btn" onclick="resetBoard()">Reset Board</button>
+
+  <div class="status" id="autoStatus">Auto-call: Off</div>
 
   <div class="board" id="board"></div>
 
@@ -131,12 +157,23 @@
     let availableNumbers = [];
     let calledNumbers = new Set();
 
+    // NEW: auto-call timer holder
+    let autoCallTimer = null;
+    const AUTO_CALL_MS = 30000; // 30 seconds
+
+    function setAutoStatus(text) {
+      document.getElementById("autoStatus").innerText = text;
+    }
+
     function initBoard() {
       const board = document.getElementById("board");
       board.innerHTML = "";
       availableNumbers = [];
       calledNumbers.clear();
       document.getElementById("currentBall").innerText = "—";
+
+      // NEW: stop auto if board re-inits
+      stopAutoCall(true);
 
       for (const letter in ranges) {
         const column = document.createElement("div");
@@ -161,7 +198,11 @@
     }
 
     function callNextBall() {
-      if (availableNumbers.length === 0) return;
+      if (availableNumbers.length === 0) {
+        // NEW: stop auto when done
+        stopAutoCall();
+        return;
+      }
 
       const index = Math.floor(Math.random() * availableNumbers.length);
       const ball = availableNumbers.splice(index, 1)[0];
@@ -173,6 +214,9 @@
 
       availableNumbers = availableNumbers.filter(b => b !== ball);
       markCalled(ball);
+
+      // NEW: if we ran out, stop auto
+      if (availableNumbers.length === 0) stopAutoCall();
     }
 
     function markCalled(ball) {
@@ -189,6 +233,38 @@
     function resetBoard() {
       if (!confirm("Reset all called numbers?")) return;
       initBoard();
+    }
+
+    // -------------------------
+    // NEW: Auto-call functions
+    // -------------------------
+    function startAutoCall() {
+      if (autoCallTimer !== null) return; // already running
+
+      if (availableNumbers.length === 0) {
+        setAutoStatus("Auto-call: Off (no balls left)");
+        return;
+      }
+
+      setAutoStatus("Auto-call: ON (every 30 seconds)");
+      autoCallTimer = setInterval(() => {
+        callNextBall();
+        if (availableNumbers.length === 0) {
+          stopAutoCall();
+        }
+      }, AUTO_CALL_MS);
+    }
+
+    function stopAutoCall(silent = false) {
+      if (autoCallTimer !== null) {
+        clearInterval(autoCallTimer);
+        autoCallTimer = null;
+      }
+      if (!silent) {
+        setAutoStatus("Auto-call: Off");
+      } else {
+        setAutoStatus("Auto-call: Off");
+      }
     }
 
     initBoard();
