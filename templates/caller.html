@@ -5,129 +5,215 @@
   <title>Bingo Caller</title>
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background:#f0e8ff;
-      text-align:center;
-      padding:14px;
+    body { font-family: Arial, sans-serif; background:#f0e8ff; text-align:center; padding:14px; }
+    .wrap { max-width:900px; margin:0 auto; }
+    .card { background:#fff; padding:18px; border-radius:16px; box-shadow:0 4px 14px rgba(0,0,0,.12); margin:14px 0; }
+    .big { font-size:46px; font-weight:900; background:#7d4fff; color:#fff; display:inline-block; padding:12px 26px; border-radius:18px; margin:10px 0; }
+    button { cursor:pointer; padding:10px 16px; border:none; border-radius:14px; font-weight:700; background:#7d4fff; color:#fff; }
+    button.danger { background:#ff3b6b; }
+    select { padding:8px; border-radius:10px; border:1px solid #bbb; }
+    .row { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:10px; }
+    .muted { opacity:.75; font-size:13px; }
+
+    /* Board */
+    .board { display:flex; justify-content:center; gap:12px; flex-wrap:wrap; margin-top:14px; }
+    .col { background:#f7f4ff; border:2px solid #d8d0ff; border-radius:16px; padding:10px; width:110px; }
+    .colHead { background:#7d4fff; color:#fff; font-weight:900; font-size:22px; border-radius:14px; padding:8px 0; margin-bottom:8px; }
+    .colGrid { display:grid; grid-template-columns: 1fr; gap:6px; }
+    .cell { background:#fff; border:1px solid #333; border-radius:10px; padding:8px 0; font-weight:900; font-size:16px; }
+    .cell.called { background:#b8ffcc; border-color:#1b7a3a; }
+
+    /* Bingo feed */
+    .feedItem { background:#ffe5ef; border:2px solid #ff8ab3; border-radius:14px; padding:10px; margin:8px auto; max-width:600px; text-align:left; }
+
+    /* Error bar */
+    .err { display:none; background:#ffefef; border:2px solid #ff9aaa; color:#7a0013; padding:10px; border-radius:12px; margin:10px auto; max-width:760px; text-align:left; }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+
+    <div class="card">
+      <h1>Bingo Caller</h1>
+
+      <div id="errorBar" class="err"></div>
+
+      <div id="currentBall" class="big">—</div>
+
+      <div>
+        <b>Last 5 called:</b>
+        <span id="last5">—</span>
+      </div>
+
+      <div class="muted" style="margin-top:6px;">
+        Remaining balls: <span id="remaining">—</span>
+      </div>
+
+      <div class="row">
+        <button id="nextBtn">Next Ball</button>
+        <button id="newGameBtn" class="danger">New Game</button>
+      </div>
+
+      <div class="row">
+        <b>Ready:</b> <span id="readyCount">0</span>
+
+        <b>Time between calls:</b>
+        <select id="delaySel">
+          <option value="0">Manual only</option>
+          <option value="5">5 sec</option>
+          <option value="10">10 sec</option>
+          <option value="15">15 sec</option>
+          <option value="20">20 sec</option>
+          <option value="30">30 sec</option>
+        </select>
+
+        <label>
+          <input type="checkbox" id="autoChk" />
+          Auto-call
+        </label>
+      </div>
+
+      <div style="margin-top:10px;">
+        <b>Reactions:</b> <span id="reactSummary">—</span>
+      </div>
+
+      <h2 style="margin-top:18px;">Caller Board</h2>
+
+      <div class="board">
+        <div class="col"><div class="colHead">B</div><div id="colB" class="colGrid"></div></div>
+        <div class="col"><div class="colHead">I</div><div id="colI" class="colGrid"></div></div>
+        <div class="col"><div class="colHead">N</div><div id="colN" class="colGrid"></div></div>
+        <div class="col"><div class="colHead">G</div><div id="colG" class="colGrid"></div></div>
+        <div class="col"><div class="colHead">O</div><div id="colO" class="colGrid"></div></div>
+      </div>
+
+      <div class="muted" style="margin-top:12px;">
+        Share player link: <b>/</b> &nbsp;|&nbsp; Host link: <b>/caller</b>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🚨 Bingo Calls</h2>
+      <div id="bingoFeed"></div>
+    </div>
+
+  </div>
+
+  <script>
+    const errorBar = document.getElementById("errorBar");
+
+    function showError(msg) {
+      errorBar.style.display = "block";
+      errorBar.textContent = msg;
     }
 
-    .wrap {
-      max-width:900px;
-      margin:0 auto;
+    async function postJSON(url, data) {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(data || {})
+      });
+      const payload = await res.json().catch(()=> ({}));
+      return { ok: res.ok, status: res.status, data: payload };
     }
 
-    .card {
-      background:#fff;
-      padding:18px;
-      border-radius:16px;
-      box-shadow:0 4px 14px rgba(0,0,0,.12);
-      margin:14px 0;
+    function renderBoard(calledList) {
+      const called = new Set(calledList || []);
+
+      function fillCol(elId, start, end, letter) {
+        const el = document.getElementById(elId);
+        el.innerHTML = "";
+        for (let n = start; n <= end; n++) {
+          const ball = `${letter}${n}`;
+          const d = document.createElement("div");
+          d.className = "cell" + (called.has(ball) ? " called" : "");
+          d.textContent = n;
+          el.appendChild(d);
+        }
+      }
+
+      fillCol("colB", 1, 15, "B");
+      fillCol("colI", 16, 30, "I");
+      fillCol("colN", 31, 45, "N");
+      fillCol("colG", 46, 60, "G");
+      fillCol("colO", 61, 75, "O");
     }
 
-    h1, h2 {
-      margin:8px 0;
+    const delaySel = document.getElementById("delaySel");
+    const autoChk  = document.getElementById("autoChk");
+    let autoTimer = null;
+
+    async function refresh() {
+      try {
+        const stateRes = await fetch("/api/state");
+        if (!stateRes.ok) throw new Error("State API failed: " + stateRes.status);
+        const state = await stateRes.json();
+
+        const called = state.called || [];
+        document.getElementById("currentBall").textContent = called.length ? called[called.length - 1] : "—";
+        document.getElementById("last5").textContent = (state.last5 && state.last5.length) ? state.last5.join(" · ") : "—";
+        document.getElementById("remaining").textContent = state.remaining_count ?? "—";
+        document.getElementById("readyCount").textContent = state.ready_count ?? 0;
+
+        const reactions = state.reactions || {};
+        document.getElementById("reactSummary").textContent =
+          Object.keys(reactions).length
+            ? Object.entries(reactions).map(([k,v]) => `${k} x${v}`).join("  ")
+            : "—";
+
+        const feed = document.getElementById("bingoFeed");
+        feed.innerHTML = "";
+        (state.bingo_calls || []).slice(0, 10).forEach(item => {
+          const div = document.createElement("div");
+          div.className = "feedItem";
+          div.innerHTML = `🚨 <b>BINGO CALLED</b> at <b>${item.time}</b> <span class="muted">(player ${item.player_id})</span>`;
+          feed.appendChild(div);
+        });
+
+        delaySel.value = String(state.auto_delay ?? 0);
+        autoChk.checked = !!state.auto_enabled;
+
+        renderBoard(state.called);
+      } catch (e) {
+        showError("Caller page JS error: " + (e && e.message ? e.message : e));
+      }
     }
 
-    .big {
-      font-size:46px;
-      font-weight:900;
-      background:#7d4fff;
-      color:#fff;
-      display:inline-block;
-      padding:12px 26px;
-      border-radius:18px;
-      margin:10px 0;
+    async function callNextBall() {
+      const res = await postJSON("/api/next", { min_ready: 0 });
+      if (!res.ok && res.data && res.data.reason) {
+        showError("Next ball error: " + res.data.reason);
+      }
     }
 
-    button {
-      cursor:pointer;
-      padding:10px 16px;
-      border:none;
-      border-radius:14px;
-      font-weight:700;
-      background:#7d4fff;
-      color:#fff;
+    document.getElementById("nextBtn").addEventListener("click", callNextBall);
+
+    document.getElementById("newGameBtn").addEventListener("click", async () => {
+      if (!confirm("Start a NEW GAME?")) return;
+      await postJSON("/api/new_game", {});
+      await refresh();
+    });
+
+    async function syncAuto() {
+      const delay = parseInt(delaySel.value, 10);
+      const enabled = autoChk.checked && delay > 0;
+
+      await postJSON("/api/auto", { delay, enabled });
+
+      if (autoTimer) clearInterval(autoTimer);
+      autoTimer = null;
+
+      if (enabled) {
+        autoTimer = setInterval(callNextBall, delay * 1000);
+      }
     }
 
-    button.danger {
-      background:#ff3b6b;
-    }
+    delaySel.addEventListener("change", syncAuto);
+    autoChk.addEventListener("change", syncAuto);
 
-    select {
-      padding:8px;
-      border-radius:10px;
-      border:1px solid #bbb;
-    }
-
-    .row {
-      display:flex;
-      gap:12px;
-      justify-content:center;
-      flex-wrap:wrap;
-      align-items:center;
-      margin-top:10px;
-    }
-
-    .muted {
-      opacity:.75;
-      font-size:13px;
-    }
-
-    /* ===== CALLER BOARD ===== */
-
-    .board {
-      display:flex;
-      justify-content:center;
-      gap:12px;
-      flex-wrap:wrap;
-      margin-top:14px;
-    }
-
-    .col {
-      background:#f7f4ff;
-      border:2px solid #d8d0ff;
-      border-radius:16px;
-      padding:10px;
-      width:110px;
-    }
-
-    .colHead {
-      background:#7d4fff;
-      color:#fff;
-      font-weight:900;
-      font-size:22px;
-      border-radius:14px;
-      padding:8px 0;
-      margin-bottom:8px;
-    }
-
-    .colGrid {
-      display:grid;
-      grid-template-columns: 1fr;
-      gap:6px;
-    }
-
-    .cell {
-      background:#fff;
-      border:1px solid #333;
-      border-radius:10px;
-      padding:8px 0;
-      font-weight:900;
-      font-size:16px;
-    }
-
-    .cell.called {
-      background:#b8ffcc;
-      border-color:#1b7a3a;
-    }
-
-    /* ===== BINGO FEED ===== */
-
-    .feedItem {
-      background:#ffe5ef;
-      border:2px solid #ff8ab3;
-      border-radius:14px;
-      padding:10px;
-      margin:8px auto;
-      max
+    refresh();
+    setInterval(refresh, 1200);
+  </script>
+</body>
+</html>
