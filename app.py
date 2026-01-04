@@ -101,14 +101,13 @@ new_game()
 # -----------------------------
 @app.route("/")
 def home():
-    # Default entry point = player page
-    return redirect("/player")
-
+    return redirect("/cards")
 
 
 @app.route("/caller")
 def caller_page():
     return render_template("caller.html")
+
 
 @app.route("/player")
 def player_redirect():
@@ -116,7 +115,8 @@ def player_redirect():
     player_id = "p_" + uuid.uuid4().hex[:10]
     PLAYER_CARDS[player_id] = generate_card()
     touch()
-    return render_template("player.html", player_id=player_id, card=PLAYER_CARDS[player_id])
+    return render_template("cards.html", player_id=player_id, card=PLAYER_CARDS[player_id])
+
 
 @app.route("/player/<player_id>")
 def player_page(player_id):
@@ -124,7 +124,8 @@ def player_page(player_id):
         # If someone refreshes with unknown id, make them a card anyway
         PLAYER_CARDS[player_id] = generate_card()
         touch()
-    return render_template("player.html", player_id=player_id, card=PLAYER_CARDS[player_id])
+    return render_template("cards.html", player_id=player_id, card=PLAYER_CARDS[player_id])
+
 
 # -----------------------------
 # API: shared state
