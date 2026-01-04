@@ -1,302 +1,216 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Your Bingo Cards</title>
-
+  <meta charset="utf-8" />
+  <title>Player Card</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f0e8ff;
-      text-align: center;
-      padding-bottom: 40px;
-      margin: 0;
-    }
-
-    h2 {
-      margin: 18px 0 6px;
-    }
-
-    /* Swipe hint */
-    .swipe-hint {
-      display: none;
-      font-size: 14px;
-      color: #4b2e83;
-      opacity: 0.9;
-      margin-bottom: 8px;
-      animation: pulse 1.8s infinite;
-    }
-
-    @keyframes pulse {
-      0% { opacity: 0.4; }
-      50% { opacity: 1; }
-      100% { opacity: 0.4; }
-    }
-
-    /* Controls */
-    .nav {
-      display: none;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin: 10px auto 12px;
-      padding: 0 12px;
-      max-width: 520px;
-    }
-
-    .nav button {
-      padding: 10px 14px;
-      font-size: 16px;
-      border-radius: 12px;
-      border: none;
-      cursor: pointer;
-      background: #7d4fff;
-      color: white;
-      font-weight: bold;
-      min-width: 110px;
-    }
-
-    .nav button:disabled {
-      opacity: 0.45;
-      cursor: default;
-    }
-
-    .nav .counter {
-      font-weight: bold;
-      color: #4b2e83;
-      background: rgba(255,255,255,0.7);
-      border: 1px solid rgba(125,79,255,0.25);
-      padding: 8px 12px;
-      border-radius: 999px;
-      white-space: nowrap;
-    }
-
-    /* Cards container (desktop) */
-    .cards {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 24px;
-      padding: 0 12px;
-    }
-
-    /* Each card */
-    .card {
-      background: white;
-      padding: 12px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      max-width: 360px;
-      width: 100%;
-    }
-
-    .card h3 {
-      margin: 8px 0 10px;
-      font-size: 18px;
-      color: #4b2e83;
-    }
-
-    table {
-      border-collapse: collapse;
-      margin: 10px auto;
-      width: 100%;
-      max-width: 320px;
-    }
-
-    th {
-      background: #7d4fff;
-      color: white;
-      padding: 8px;
-      font-size: 18px;
-    }
-
+    body { font-family: Arial, sans-serif; background:#f0e8ff; text-align:center; padding:14px; }
+    .wrap { max-width:860px; margin:0 auto; }
+    .panel { background:#fff; padding:14px; border-radius:14px; box-shadow:0 4px 14px rgba(0,0,0,.12); margin:12px 0; }
+    .small { font-size:13px; opacity:.8; }
+    .row { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; align-items:center; }
+    button { cursor:pointer; padding:10px 14px; border:none; border-radius:12px; font-weight:700; background:#7d4fff; color:#fff; }
+    button.danger { background:#ff3b6b; }
+    button.ghost { background:#ede7ff; color:#4a2bd1; }
+    table { border-collapse: collapse; margin: 10px auto; }
+    th { background:#7d4fff; color:white; padding:10px; font-size:18px; }
     td {
-      border: 1px solid #333;
-      width: 42px;
-      height: 42px;
-      text-align: center;
-      cursor: pointer;
-      background: #ffffff;
-      font-weight: bold;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
+      border: 1px solid #333; width: 74px; height: 62px;
+      font-size: 18px; font-weight: 800; background: #fff;
+      cursor:pointer; user-select:none;
     }
-
-    td.marked {
-      background: #2ec4b6;
-      color: white;
-    }
-
-    /* Footer disclaimer */
-    .site-footer {
-      margin-top: 40px;
-      padding: 15px 10px;
-      font-size: 0.85rem;
-      color: #666;
-      border-top: 1px solid #ddd;
-      background: rgba(255,255,255,0.6);
-    }
-
-    .site-footer p {
-      margin: 0;
-      line-height: 1.4;
-    }
-
-    /* =========================
-       📱 MOBILE IMPROVEMENTS
-       ========================= */
-
-    @media (max-width: 768px) {
-
-      /* Show swipe hint + nav on phones */
-      .swipe-hint { display: block; }
-      .nav { display: flex; }
-
-      .cards {
-        flex-wrap: nowrap;
-        justify-content: flex-start;
-        overflow-x: auto;
-        scroll-snap-type: x mandatory;
-        -webkit-overflow-scrolling: touch;
-        gap: 12px;
-        padding: 0 12px 12px;
-      }
-
-      .card {
-        flex: 0 0 100%;
-        scroll-snap-align: start;
-        max-width: none;
-      }
-
-      /* Bigger tap targets */
-      td {
-        width: 56px;
-        height: 56px;
-        font-size: 18px;
-      }
-
-      th {
-        font-size: 20px;
-      }
-    }
-
-    /* Hide scrollbar */
-    .cards::-webkit-scrollbar { display: none; }
-    .cards { scrollbar-width: none; }
+    td.marked { background:#b8ffcc; }
+    td.free { background:#ffe9a8; }
+    .react { background:#ede7ff; color:#4a2bd1; }
   </style>
-
-  <script>
-    function toggle(cell) {
-      cell.classList.toggle("marked");
-    }
-
-    function clamp(n, min, max) {
-      return Math.max(min, Math.min(max, n));
-    }
-
-    window.addEventListener("load", () => {
-      const hint = document.querySelector(".swipe-hint");
-      if (hint) setTimeout(() => hint.style.display = "none", 5000);
-
-      const cardsWrap = document.querySelector(".cards");
-      const cardEls = Array.from(document.querySelectorAll(".cards .card"));
-      const prevBtn = document.getElementById("prevBtn");
-      const nextBtn = document.getElementById("nextBtn");
-      const counter = document.getElementById("counter");
-
-      if (!cardsWrap || cardEls.length === 0) return;
-
-      let idx = 0;
-
-      function cardWidth() {
-        // width of first card + gap (gap is 12px on mobile)
-        const w = cardEls[0].getBoundingClientRect().width;
-        // Try to measure actual gap from computed style
-        const gap = parseFloat(getComputedStyle(cardsWrap).columnGap || getComputedStyle(cardsWrap).gap || "12") || 12;
-        return w + gap;
-      }
-
-      function updateUI() {
-        if (counter) counter.textContent = `Card ${idx + 1} of ${cardEls.length}`;
-        if (prevBtn) prevBtn.disabled = (idx === 0);
-        if (nextBtn) nextBtn.disabled = (idx === cardEls.length - 1);
-      }
-
-      function scrollToIdx(newIdx) {
-        idx = clamp(newIdx, 0, cardEls.length - 1);
-        cardsWrap.scrollTo({ left: idx * cardWidth(), behavior: "smooth" });
-        updateUI();
-      }
-
-      // Buttons
-      if (prevBtn) prevBtn.addEventListener("click", () => scrollToIdx(idx - 1));
-      if (nextBtn) nextBtn.addEventListener("click", () => scrollToIdx(idx + 1));
-
-      // Update index when user swipes manually
-      let scrollTimer = null;
-      cardsWrap.addEventListener("scroll", () => {
-        if (scrollTimer) clearTimeout(scrollTimer);
-        scrollTimer = setTimeout(() => {
-          const w = cardWidth();
-          const newIdx = Math.round(cardsWrap.scrollLeft / w);
-          idx = clamp(newIdx, 0, cardEls.length - 1);
-          updateUI();
-        }, 80);
-      });
-
-      // Initial
-      updateUI();
-    });
-  </script>
 </head>
-
 <body>
+  <div class="wrap">
 
-  <h2>🎴 Your Bingo Cards</h2>
-  <div class="swipe-hint">⬅️ Swipe left / right to see your cards ➡️</div>
+    <div class="panel">
+      <h1>Player Card</h1>
+      <div class="small">Player ID: <b id="pid">{{ player_id }}</b></div>
 
-  <!-- Prev / Next controls (shows on mobile) -->
-  <div class="nav">
-    <button id="prevBtn" type="button">◀ Prev</button>
-    <div class="counter" id="counter">Card 1 of 1</div>
-    <button id="nextBtn" type="button">Next ▶</button>
-  </div>
+      <div style="margin-top:8px;">
+        <b>Last 5 called:</b> <span id="last5">—</span>
+      </div>
 
-  <div class="cards">
-    {% for card in cards %}
-      <div class="card">
-        <h3>Card {{ card.id }} ({{ loop.index }} of {{ cards|length }})</h3>
+      <div class="row" style="margin-top:12px;">
+        <button id="readyBtn">✅ I’m Ready</button>
+        <button id="bingoBtn" class="danger">🚨 CALL BINGO</button>
+        <button id="reuseBtn" class="ghost">🔄 Reuse (Clear Marks)</button>
+        <button id="newCardBtn" class="ghost">🎲 New Card</button>
+        <button id="shotBtn" class="ghost">📸 Screenshot</button>
+      </div>
 
-        <table>
+      <div style="margin-top:12px;">
+        <b>Reactions:</b>
+        <button class="react" data-emoji="👀">👀</button>
+        <button class="react" data-emoji="🔥">🔥</button>
+        <button class="react" data-emoji="😱">😱</button>
+        <button class="react" data-emoji="🎉">🎉</button>
+      </div>
+
+      <div class="small" style="margin-top:10px;">
+        Tip: Tap squares to mark/unmark. Free space is already marked.
+      </div>
+    </div>
+
+    <div class="panel" id="cardWrap">
+      <table id="bingoTable">
+        <tr>
+          <th>B</th><th>I</th><th>N</th><th>G</th><th>O</th>
+        </tr>
+
+        {% for r in range(5) %}
           <tr>
-            {% for l in ["B","I","N","G","O"] %}
-              <th>{{ l }}</th>
-            {% endfor %}
-          </tr>
-
-          {% for i in range(5) %}
-          <tr>
-            {% for l in ["B","I","N","G","O"] %}
-              <td onclick="toggle(this)">
-                {{ card.data[l][i] }}
+            {% for c in range(5) %}
+              {% set val = card[r][c] %}
+              <td data-r="{{r}}" data-c="{{c}}"
+                  class="{% if r==2 and c==2 %}free marked{% endif %}">
+                {{ val }}
               </td>
             {% endfor %}
           </tr>
-          {% endfor %}
-        </table>
-      </div>
-    {% endfor %}
+        {% endfor %}
+      </table>
+    </div>
+
   </div>
 
-  <footer class="site-footer">
-    <p>
-      This Bingo game is played during livestreams for entertainment only.<br>
-      Participation is free, and no purchases or gifts are required to play.<br>
-      Players interact through chat while using this site to follow along.
-    </p>
-  </footer>
+  <!-- Screenshot library -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
+  <script>
+    const playerId = "{{ player_id }}";
+    const marksKey = "bingo_marks_" + playerId;
+
+    function loadMarks() {
+      try { return JSON.parse(localStorage.getItem(marksKey) || "[]"); }
+      catch { return []; }
+    }
+
+    function saveMarks(marks) {
+      localStorage.setItem(marksKey, JSON.stringify(marks));
+    }
+
+    function keyForCell(r,c){ return `${r},${c}`; }
+
+    function applyMarks() {
+      const marks = new Set(loadMarks());
+      document.querySelectorAll("#bingoTable td").forEach(td => {
+        const r = td.dataset.r, c = td.dataset.c;
+        if (r == null || c == null) return;
+
+        const k = keyForCell(r,c);
+        const isFree = (r === "2" && c === "2");
+        if (isFree || marks.has(k)) td.classList.add("marked");
+        else td.classList.remove("marked");
+      });
+    }
+
+    // Toggle marks
+    document.getElementById("bingoTable").addEventListener("click", (e) => {
+      const td = e.target.closest("td");
+      if (!td) return;
+
+      const r = td.dataset.r, c = td.dataset.c;
+      if (r == null || c == null) return;
+
+      // Don't allow unmarking FREE
+      if (r === "2" && c === "2") return;
+
+      const marks = new Set(loadMarks());
+      const k = keyForCell(r,c);
+      if (marks.has(k)) marks.delete(k); else marks.add(k);
+      saveMarks([...marks]);
+      applyMarks();
+    });
+
+    async function postJSON(url, data) {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(data || {})
+      });
+      const payload = await res.json().catch(()=> ({}));
+      return { ok: res.ok, status: res.status, data: payload };
+    }
+
+    // Poll last 5 numbers
+    async function refreshState() {
+      const state = await (await fetch("/api/state")).json();
+      document.getElementById("last5").textContent =
+        (state.last5 && state.last5.length) ? state.last5.join(" · ") : "—";
+    }
+
+    // Ready
+    let isReady = false;
+    document.getElementById("readyBtn").addEventListener("click", async () => {
+      isReady = !isReady;
+      await postJSON("/api/ready", { player_id: playerId, ready: isReady });
+      document.getElementById("readyBtn").textContent = isReady ? "✅ Ready (tap to unready)" : "✅ I’m Ready";
+    });
+
+    // Call bingo
+    document.getElementById("bingoBtn").addEventListener("click", async () => {
+      if (!confirm("Call BINGO to the host?")) return;
+      await postJSON("/api/bingo", { player_id: playerId });
+      alert("Bingo called! 🎉");
+    });
+
+    // Reactions
+    document.querySelectorAll(".react").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const emoji = btn.dataset.emoji;
+        await postJSON("/api/reaction", { emoji });
+      });
+    });
+
+    // Reuse = clear marks only
+    document.getElementById("reuseBtn").addEventListener("click", () => {
+      localStorage.removeItem(marksKey);
+      isReady = false;
+      document.getElementById("readyBtn").textContent = "✅ I’m Ready";
+      applyMarks();
+      alert("Marks cleared ✅ Reusing same card.");
+    });
+
+    // New card = regenerate numbers but keep same URL
+    document.getElementById("newCardBtn").addEventListener("click", async () => {
+      if (!confirm("Generate a brand new card?")) return;
+
+      // clear marks + unready
+      localStorage.removeItem(marksKey);
+      isReady = false;
+      document.getElementById("readyBtn").textContent = "✅ I’m Ready";
+      await postJSON("/api/ready", { player_id: playerId, ready: false });
+
+      // ask server to regenerate card
+      const res = await postJSON("/api/new_card", { player_id: playerId });
+      if (res.ok) {
+        // reload page to fetch new card values
+        window.location.reload();
+      } else {
+        alert("Could not generate a new card.");
+      }
+    });
+
+    // Screenshot
+    document.getElementById("shotBtn").addEventListener("click", async () => {
+      const cardEl = document.getElementById("cardWrap");
+      const canvas = await html2canvas(cardEl, { backgroundColor: "#ffffff" });
+      const link = document.createElement("a");
+      link.download = "bingo-card.png";
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    });
+
+    applyMarks();
+    refreshState();
+    setInterval(refreshState, 1500);
+  </script>
 </body>
 </html>
+
 
