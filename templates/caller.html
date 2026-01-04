@@ -1,274 +1,155 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8" />
   <title>Bingo Caller</title>
-
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f0e8ff;
-      text-align: center;
-      padding: 14px;
-    }
-
-    /* TOP DISCLAIMER */
-    .disclaimer {
-      background: #fff3cd;
-      border: 2px solid #ffeeba;
-      color: #6c5700;
-      font-weight: bold;
-      padding: 8px;
-      border-radius: 10px;
-      max-width: 620px;
-      margin: 0 auto 14px auto;
-      font-size: 13px;
-    }
-
-    h1 {
-      margin: 6px 0 8px 0;
-      font-size: 24px;
-    }
-
-    /* CURRENT BALL DISPLAY */
-    .current-ball {
-      font-size: 40px;
-      font-weight: bold;
-      background: #7d4fff;
-      color: white;
-      padding: 14px;
-      border-radius: 14px;
-      margin: 12px auto;
-      width: 230px;
-    }
-
-    /* BUTTONS */
-    button {
-      padding: 10px 18px;
-      font-size: 16px;
-      border-radius: 10px;
-      border: none;
-      cursor: pointer;
-      margin: 6px;
-    }
-
-    .call-btn {
-      background: #2ec4b6;
-      color: white;
-    }
-
-    .reset-btn {
-      background: #ff6b6b;
-      color: white;
-    }
-
-    /* NEW: AUTO BUTTONS */
-    .auto-btn {
-      background: #7d4fff;
-      color: white;
-    }
-
-    .stop-btn {
-      background: #555;
-      color: white;
-    }
-
-    /* BOARD */
-    .board {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 8px;
-      max-width: 500px;
-      margin: 18px auto;
-    }
-
-    .column {
-      background: white;
-      border-radius: 10px;
-      padding: 8px;
-    }
-
-    .column h3 {
-      background: #7d4fff;
-      color: white;
-      border-radius: 6px;
-      margin: 0 0 6px 0;
-      padding: 4px;
-      font-size: 16px;
-    }
-
-    .ball {
-      padding: 5px;
-      margin: 3px 0;
-      border-radius: 6px;
-      cursor: pointer;
-      background: #eee;
-      font-weight: bold;
-      font-size: 14px;
-    }
-
-    .ball.called {
-      background: #7d4fff;
-      color: white;
-      cursor: default;
-    }
-
-    /* NEW: Small status text */
-    .status {
-      font-size: 13px;
-      color: #4b2e83;
-      margin-top: 4px;
-      opacity: 0.9;
-    }
+    body { font-family: Arial, sans-serif; background:#f0e8ff; text-align:center; padding:14px; }
+    .wrap { max-width:820px; margin:0 auto; }
+    .card { background:#fff; padding:14px; border-radius:14px; box-shadow:0 4px 14px rgba(0,0,0,.12); margin:12px 0; }
+    .big { font-size:46px; font-weight:900; background:#7d4fff; color:#fff; display:inline-block; padding:10px 22px; border-radius:16px; }
+    button { cursor:pointer; padding:10px 14px; border:none; border-radius:12px; font-weight:700; background:#7d4fff; color:#fff; }
+    button.danger { background:#ff3b6b; }
+    select { padding:8px; border-radius:10px; border:1px solid #bbb; }
+    .row { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; align-items:center; }
+    .feedItem { background:#ffe5ef; border:2px solid #ff8ab3; border-radius:12px; padding:10px; margin:8px auto; max-width:560px; text-align:left; }
+    .muted { opacity:.75; font-size:13px; }
   </style>
 </head>
-
 <body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Bingo Caller</h1>
 
-  <div class="disclaimer">
-    This Bingo game is played during livestreams for entertainment only.<br>
-    Participation is free. No purchases, gifts, prizes, or monetary value.
+      <div id="currentBall" class="big">—</div>
+
+      <div style="margin-top:10px;">
+        <b>Last 5 called:</b> <span id="last5">—</span>
+      </div>
+
+      <div class="muted" style="margin-top:6px;">
+        Remaining balls: <span id="remaining">—</span>
+      </div>
+
+      <div class="row" style="margin-top:12px;">
+        <button id="nextBtn">Next Ball</button>
+        <button id="newGameBtn" class="danger">New Game</button>
+      </div>
+
+      <div class="row" style="margin-top:12px;">
+        <span><b>Ready:</b> <span id="readyCount">0</span></span>
+
+        <label><b>Time between calls:</b></label>
+        <select id="delaySel">
+          <option value="0">Manual only</option>
+          <option value="5">5 sec</option>
+          <option value="10">10 sec</option>
+          <option value="15">15 sec</option>
+          <option value="20">20 sec</option>
+          <option value="30">30 sec</option>
+        </select>
+
+        <label>
+          <input type="checkbox" id="autoChk" />
+          Auto-call
+        </label>
+      </div>
+
+      <div style="margin-top:12px;">
+        <b>Reactions:</b> <span id="reactSummary">—</span>
+      </div>
+
+      <div class="muted" style="margin-top:10px;">
+        Share player link: <b>/</b> (your main site link) — Host link: <b>/caller</b>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🚨 Bingo Calls</h2>
+      <div id="bingoFeed"></div>
+    </div>
   </div>
 
-  <h1>🎱 Bingo Caller</h1>
-
-  <div class="current-ball" id="currentBall">—</div>
-
-  <button class="call-btn" onclick="callNextBall()">Call Next Ball</button>
-
-  <!-- NEW: Auto-call controls -->
-  <button class="auto-btn" onclick="startAutoCall()">▶ Start Auto Call (30s)</button>
-  <button class="stop-btn" onclick="stopAutoCall()">⏸ Stop Auto Call</button>
-
-  <button class="reset-btn" onclick="resetBoard()">Reset Board</button>
-
-  <div class="status" id="autoStatus">Auto-call: Off</div>
-
-  <div class="board" id="board"></div>
-
   <script>
-    const ranges = {
-      B: [1, 15],
-      I: [16, 30],
-      N: [31, 45],
-      G: [46, 60],
-      O: [61, 75]
-    };
-
-    let availableNumbers = [];
-    let calledNumbers = new Set();
-
-    // NEW: auto-call timer holder
-    let autoCallTimer = null;
-    const AUTO_CALL_MS = 30000; // 30 seconds
-
-    function setAutoStatus(text) {
-      document.getElementById("autoStatus").innerText = text;
-    }
-
-    function initBoard() {
-      const board = document.getElementById("board");
-      board.innerHTML = "";
-      availableNumbers = [];
-      calledNumbers.clear();
-      document.getElementById("currentBall").innerText = "—";
-
-      // NEW: stop auto if board re-inits
-      stopAutoCall(true);
-
-      for (const letter in ranges) {
-        const column = document.createElement("div");
-        column.className = "column";
-
-        const header = document.createElement("h3");
-        header.textContent = letter;
-        column.appendChild(header);
-
-        for (let i = ranges[letter][0]; i <= ranges[letter][1]; i++) {
-          const cell = document.createElement("div");
-          cell.className = "ball";
-          cell.textContent = `${letter}-${i}`;
-          cell.addEventListener("click", () => manualCall(`${letter}-${i}`));
-          column.appendChild(cell);
-
-          availableNumbers.push(`${letter}-${i}`);
-        }
-
-        board.appendChild(column);
-      }
-    }
-
-    function callNextBall() {
-      if (availableNumbers.length === 0) {
-        // NEW: stop auto when done
-        stopAutoCall();
-        return;
-      }
-
-      const index = Math.floor(Math.random() * availableNumbers.length);
-      const ball = availableNumbers.splice(index, 1)[0];
-      markCalled(ball);
-    }
-
-    function manualCall(ball) {
-      if (calledNumbers.has(ball)) return;
-
-      availableNumbers = availableNumbers.filter(b => b !== ball);
-      markCalled(ball);
-
-      // NEW: if we ran out, stop auto
-      if (availableNumbers.length === 0) stopAutoCall();
-    }
-
-    function markCalled(ball) {
-      calledNumbers.add(ball);
-      document.getElementById("currentBall").innerText = ball;
-
-      document.querySelectorAll(".ball").forEach(el => {
-        if (el.textContent === ball) {
-          el.classList.add("called");
-        }
+    async function postJSON(url, data) {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(data || {})
       });
+      const payload = await res.json().catch(()=> ({}));
+      return { ok: res.ok, status: res.status, data: payload };
     }
 
-    function resetBoard() {
-      if (!confirm("Reset all called numbers?")) return;
-      initBoard();
+    let autoTimer = null;
+
+    async function refresh() {
+      const state = await (await fetch("/api/state")).json();
+
+      const called = state.called || [];
+      document.getElementById("currentBall").textContent = called.length ? called[called.length - 1] : "—";
+      document.getElementById("last5").textContent = (state.last5 && state.last5.length) ? state.last5.join(" · ") : "—";
+      document.getElementById("remaining").textContent = state.remaining_count ?? "—";
+      document.getElementById("readyCount").textContent = state.ready_count ?? 0;
+
+      const reactions = state.reactions || {};
+      document.getElementById("reactSummary").textContent =
+        Object.keys(reactions).length
+          ? Object.entries(reactions).map(([k,v]) => `${k} x${v}`).join("  ")
+          : "—";
+
+      // Bingo feed
+      const feed = document.getElementById("bingoFeed");
+      feed.innerHTML = "";
+      (state.bingo_calls || []).slice(0, 10).forEach(item => {
+        const div = document.createElement("div");
+        div.className = "feedItem";
+        div.innerHTML = `🚨 <b>BINGO CALLED</b> at <b>${item.time}</b> <span class="muted">(player ${item.player_id})</span>`;
+        feed.appendChild(div);
+      });
+
+      // Keep dropdown/checkbox in sync with server
+      document.getElementById("delaySel").value = String(state.auto_delay ?? 0);
+      document.getElementById("autoChk").checked = !!state.auto_enabled;
     }
 
-    // -------------------------
-    // NEW: Auto-call functions
-    // -------------------------
-    function startAutoCall() {
-      if (autoCallTimer !== null) return; // already running
+    async function callNextBall() {
+      // If you want to force "everyone ready", change min_ready to your expected player count.
+      const min_ready = 0;
 
-      if (availableNumbers.length === 0) {
-        setAutoStatus("Auto-call: Off (no balls left)");
-        return;
+      const res = await postJSON("/api/next", { min_ready });
+      if (!res.ok && res.data.reason === "not_ready") {
+        alert(`Not enough players ready yet (${res.data.ready_count}).`);
       }
-
-      setAutoStatus("Auto-call: ON (every 30 seconds)");
-      autoCallTimer = setInterval(() => {
-        callNextBall();
-        if (availableNumbers.length === 0) {
-          stopAutoCall();
-        }
-      }, AUTO_CALL_MS);
     }
 
-    function stopAutoCall(silent = false) {
-      if (autoCallTimer !== null) {
-        clearInterval(autoCallTimer);
-        autoCallTimer = null;
-      }
-      if (!silent) {
-        setAutoStatus("Auto-call: Off");
-      } else {
-        setAutoStatus("Auto-call: Off");
+    document.getElementById("nextBtn").addEventListener("click", callNextBall);
+
+    document.getElementById("newGameBtn").addEventListener("click", async () => {
+      if (!confirm("Start a NEW GAME? Resets called numbers, bingo calls, reactions, and readiness.")) return;
+      await postJSON("/api/new_game", {});
+      await refresh();
+    });
+
+    async function syncAuto() {
+      const delay = parseInt(document.getElementById("delaySel").value, 10);
+      const enabled = document.getElementById("autoChk").checked && delay > 0;
+
+      await postJSON("/api/auto", { delay, enabled });
+
+      if (autoTimer) clearInterval(autoTimer);
+      autoTimer = null;
+
+      if (enabled) {
+        autoTimer = setInterval(callNextBall, delay * 1000);
       }
     }
 
-    initBoard();
+    document.getElementById("delaySel").addEventListener("change", syncAuto);
+    document.getElementById("autoChk").addEventListener("change", syncAuto);
+
+    refresh();
+    setInterval(refresh, 1200);
   </script>
-
 </body>
 </html>
