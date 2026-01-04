@@ -11,19 +11,20 @@ app = Flask(__name__)
 # One shared game state
 # -----------------------------
 GAME = {
-    "called": [],                 # ["B12","N44",...]
-    "last5": deque(maxlen=5),     # last 5 called
-    "remaining": [],              # shuffled deck
+    "called": [],
+    "last5": deque(maxlen=5),
+    "remaining": [],
     "bingo_calls": deque(maxlen=15),
-    "ready": set(),               # player_ids that clicked ready
-    "reactions": Counter(),       # emoji counts
-    "auto_delay": 0,              # seconds
+    "ready": set(),
+    "reactions": Counter(),
+    "auto_delay": 0,
     "auto_enabled": False,
     "updated_at": time.time(),
 }
 
-# Store player cards in memory: player_id -> 5x5 grid
-PLAYER_CARDS = {}
+# Store player info + cards in memory
+# player_id -> {"name": str, "cards": [grid, grid, ...]}
+PLAYERS = {}
 
 
 def touch():
@@ -83,16 +84,16 @@ def get_next_ball():
     return GAME["remaining"].pop(0)
 
 
-# Start with a fresh game on boot
+# Start fresh on boot
 new_game()
 
 # -----------------------------
-# Routes (Pages)
+# Pages
 # -----------------------------
 @app.route("/")
 def home():
-    # Default entry point = players get a card
-    return redirect("/cards")
+    # ✅ Bring back your front page join form
+    return render_template("index.html")
 
 
 @app.route("/caller")
@@ -100,22 +101,54 @@ def caller_page():
     return render_template("caller.html")
 
 
-@app.route("/cards")
-def player_join():
-    # Create a new player and send them to their personal card URL
+@app.route("/cards", methods=["GET", "POST"])
+def cards_entry():
+    """
+    POST: handles the join form from index.html (name + number of cards)
+    GET: convenience fallback (if someone visits /cards directly)
+    """
+    if request.method == "GET":
+        # If they go straight to /cards, just send them back to join page
+        return redirect(url_for("home"))
+
+    # ---- POST ----
+    # These field names should match your index.html form inputs.
+    # Common names: "name" and "num_cards"
+    name = (request.form.get("name") or request.form.get("player_name") or "Player").strip()
+    try:
+        num_cards = int(request.form.get("num_cards") or request.form.get("cards") or 1)
+    except ValueError:
+        num_cards = 1
+
+    # Safety bounds
+    num_cards = max(1, min(num_cards, 24))
+
     player_id = "p_" + uuid.uuid4().hex[:10]
-    PLAYER_CARDS[player_id] = generate_card()
+    cards = [generate_card() for _ in range(num_cards)]
+
+    PLAYERS[player_id] = {"name": name, "cards": cards}
     touch()
-    return redirect(url_for("player_card", player_id=player_id))
+
+    return redirect(url_for("player_cards", player_id=player_id))
 
 
 @app.route("/cards/<player_id>")
-def player_card(player_id):
-    # If they refresh or revisit, keep their card stable
-    if player_id not in PLAYER_CARDS:
-        PLAYER_CARDS[player_id] = generate_card()
+def player_cards(player_id):
+    # If someone refreshes with an unknown id, give them 1 card
+    if player_id not in PLAYERS:
+        PLAYERS[player_id] = {"name": "Player", "cards": [generate_card()]}
         touch()
-    return render_template("cards.html", player_id=player_id, card=PLAYER_CARDS[player_id])
+
+    player = PLAYERS[player_id]
+
+    # ✅ Pass multiple cards so your existing cards.html (Prev/Next) can work
+    return render_template(
+        "cards.html",
+        player_id=player_id,
+        player_name=player["name"],
+        cards=player["cards"],
+        total_cards=len(player["cards"]),
+    )
 
 
 # -----------------------------
@@ -143,7 +176,6 @@ def api_state():
 def api_next():
     data = request.get_json(silent=True) or {}
 
-    # If you want to enforce readiness, set min_ready > 0 in caller JS
     min_ready = int(data.get("min_ready", 0))
     if len(GAME["ready"]) < min_ready:
         return jsonify({"ok": False, "reason": "not_ready", "ready_count": len(GAME["ready"])}), 409
@@ -155,7 +187,7 @@ def api_next():
     GAME["called"].append(ball)
     GAME["last5"].append(ball)
 
-    # after each call, reset readiness so players confirm again
+    # reset readiness after each call
     GAME["ready"].clear()
 
     touch()
@@ -214,19 +246,23 @@ def api_reaction():
     emoji = str(data.get("emoji", "👀"))
     GAME["reactions"][emoji] += 1
     touch()
-    return jsonify({"ok": True, "reactions": dict(GAME["reactions"])})
+    return jsonify({"ok": True})
 
 
 @app.route("/api/new_card", methods=["POST"])
 def api_new_card():
-    # Regenerate card for an existing player_id (keeps their URL the same)
+    """
+    Regenerate NEW cards for an existing player (same player_id link).
+    If the player had 4 cards, they get 4 new ones.
+    """
     data = request.get_json(silent=True) or {}
     player_id = str(data.get("player_id", ""))
 
-    if not player_id:
-        return jsonify({"ok": False, "reason": "missing_player_id"}), 400
+    if not player_id or player_id not in PLAYERS:
+        return jsonify({"ok": False, "reason": "unknown_player"}), 400
 
-    PLAYER_CARDS[player_id] = generate_card()
+    count = len(PLAYERS[player_id]["cards"])
+    PLAYERS[player_id]["cards"] = [generate_card() for _ in range(count)]
     touch()
     return jsonify({"ok": True})
 
