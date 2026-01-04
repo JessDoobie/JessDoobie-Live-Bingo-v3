@@ -2,6 +2,7 @@ import random
 import time
 import uuid
 from collections import deque, Counter
+from flask import redirect
 
 from flask import Flask, render_template, request, jsonify, url_for
 
