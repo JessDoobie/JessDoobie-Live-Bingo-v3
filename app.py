@@ -101,12 +101,9 @@ new_game()
 # -----------------------------
 @app.route("/")
 def home():
-    # Just redirect the root to the caller page
-    return """
-    <script>
-      window.location.href = "/caller";
-    </script>
-    """
+    # Default entry point = player page
+    return redirect("/player")
+
 
 
 @app.route("/caller")
