@@ -90,10 +90,29 @@ new_game()
 # -----------------------------
 # Pages
 # -----------------------------
-@app.route("/")
+@app.route("/", methods=["GET", "POST"])
 def home():
-    # ✅ Bring back your front page join form
-    return render_template("index.html")
+    if request.method == "GET":
+        return render_template("index.html")
+
+    # POST from index.html form
+    name = (request.form.get("name") or "Player").strip()
+    try:
+        count = int(request.form.get("count") or 1)
+    except ValueError:
+        count = 1
+
+    # Safety bounds to match your form (1–10)
+    count = max(1, min(count, 10))
+
+    player_id = "p_" + uuid.uuid4().hex[:10]
+    cards = [generate_card() for _ in range(count)]
+
+    PLAYERS[player_id] = {"name": name, "cards": cards}
+    touch()
+
+    return redirect(url_for("player_cards", player_id=player_id))
+
 
 
 @app.route("/caller")
