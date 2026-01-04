@@ -1,23 +1,131 @@
-from flask import Flask, render_template, request, redirect, url_for
+import random
 import time
+import uuid
 from collections import deque, Counter
-from flask import jsonify
+
+from flask import Flask, render_template, request, jsonify, url_for
+
+app = Flask(__name__)
 
 # -----------------------------
-# Shared Game State (one room)
+# Helpers
+# -----------------------------
+def now_label():
+    return time.strftime("%I:%M:%S %p").lstrip("0")
+
+def touch():
+    GAME["updated_at"] = time.time()
+
+# -----------------------------
+# Shared one-game state
 # -----------------------------
 GAME = {
-    "called": [],                      # full history
-    "last5": deque(maxlen=5),           # last 5 called
-    "bingo_calls": deque(maxlen=10),    # recent bingo calls (timestamps etc)
-    "ready": set(),                    # players who clicked Ready (store player_id)
-    "reactions": Counter(),            # emoji->count
-    "auto_delay": 0,                   # seconds (0 means manual)
-    "auto_enabled": False,             # auto-call on/off
-    "updated_at": time.time(),         # simple change marker
+    "called": [],                 # all called balls, e.g. ["B12", "N44", ...]
+    "last5": deque(maxlen=5),     # last 5 called
+    "remaining": [],              # shuffled deck of remaining balls
+    "bingo_calls": deque(maxlen=10),  # recent bingo calls
+    "ready": set(),               # set of player_id who are ready
+    "reactions": Counter(),       # emoji->count
+    "auto_delay": 0,              # seconds
+    "auto_enabled": False,
+    "updated_at": time.time(),
 }
-def touch_game():
-    GAME["updated_at"] = time.time()
+
+# Store player cards in memory (player_id -> card dict)
+PLAYER_CARDS = {}
+
+# -----------------------------
+# Bingo deck + card generation
+# -----------------------------
+def build_deck():
+    deck = []
+    for n in range(1, 16):
+        deck.append(f"B{n}")
+    for n in range(16, 31):
+        deck.append(f"I{n}")
+    for n in range(31, 46):
+        deck.append(f"N{n}")
+    for n in range(46, 61):
+        deck.append(f"G{n}")
+    for n in range(61, 76):
+        deck.append(f"O{n}")
+    random.shuffle(deck)
+    return deck
+
+def new_game():
+    GAME["called"].clear()
+    GAME["last5"].clear()
+    GAME["remaining"] = build_deck()
+    GAME["bingo_calls"].clear()
+    GAME["ready"].clear()
+    GAME["reactions"].clear()
+    GAME["auto_delay"] = 0
+    GAME["auto_enabled"] = False
+    touch()
+
+def generate_card():
+    # Classic 5x5 with FREE center
+    cols = {
+        "B": random.sample(range(1, 16), 5),
+        "I": random.sample(range(16, 31), 5),
+        "N": random.sample(range(31, 46), 5),
+        "G": random.sample(range(46, 61), 5),
+        "O": random.sample(range(61, 76), 5),
+    }
+    # Make a 5x5 grid in row-major order
+    grid = []
+    for r in range(5):
+        row = [
+            cols["B"][r],
+            cols["I"][r],
+            cols["N"][r],
+            cols["G"][r],
+            cols["O"][r],
+        ]
+        grid.append(row)
+    grid[2][2] = "FREE"
+    return grid
+
+def get_next_ball():
+    if not GAME["remaining"]:
+        return None
+    ball = GAME["remaining"].pop(0)
+    return ball
+
+# initialize a fresh game at startup
+new_game()
+
+# -----------------------------
+# Pages
+# -----------------------------
+@app.route("/")
+def home():
+    # Simple landing page with links
+    return render_template("home.html")
+
+@app.route("/caller")
+def caller_page():
+    return render_template("caller.html")
+
+@app.route("/player")
+def player_redirect():
+    # Create a player id and redirect to that player's page
+    player_id = "p_" + uuid.uuid4().hex[:10]
+    PLAYER_CARDS[player_id] = generate_card()
+    touch()
+    return render_template("player.html", player_id=player_id, card=PLAYER_CARDS[player_id])
+
+@app.route("/player/<player_id>")
+def player_page(player_id):
+    if player_id not in PLAYER_CARDS:
+        # If someone refreshes with unknown id, make them a card anyway
+        PLAYER_CARDS[player_id] = generate_card()
+        touch()
+    return render_template("player.html", player_id=player_id, card=PLAYER_CARDS[player_id])
+
+# -----------------------------
+# API: shared state
+# -----------------------------
 @app.route("/api/state")
 def api_state():
     return jsonify({
@@ -29,161 +137,100 @@ def api_state():
         "auto_delay": GAME["auto_delay"],
         "auto_enabled": GAME["auto_enabled"],
         "updated_at": GAME["updated_at"],
+        "remaining_count": len(GAME["remaining"]),
     })
+
+# -----------------------------
+# API: host actions
+# -----------------------------
+@app.route("/api/next", methods=["POST"])
+def api_next():
+    data = request.get_json(silent=True) or {}
+    min_ready = int(data.get("min_ready", 0))
+
+    if len(GAME["ready"]) < min_ready:
+        return jsonify({"ok": False, "reason": "not_ready", "ready_count": len(GAME["ready"])}), 409
+
+    ball = get_next_ball()
+    if not ball:
+        return jsonify({"ok": False, "reason": "no_balls_left"}), 409
+
+    GAME["called"].append(ball)
+    GAME["last5"].append(ball)
+
+    # reset readiness after each call
+    GAME["ready"].clear()
+
+    touch()
+    return jsonify({"ok": True, "ball": ball, "last5": list(GAME["last5"])})
+
+@app.route("/api/auto", methods=["POST"])
+def api_auto():
+    data = request.get_json(silent=True) or {}
+    GAME["auto_delay"] = int(data.get("delay", 0))
+    GAME["auto_enabled"] = bool(data.get("enabled", False))
+    touch()
+    return jsonify({"ok": True})
+
+@app.route("/api/new_game", methods=["POST"])
+def api_new_game():
+    new_game()
+    return jsonify({"ok": True})
+
+# -----------------------------
+# API: player actions
+# -----------------------------
 @app.route("/api/ready", methods=["POST"])
 def api_ready():
-    data = request.get_json(force=True)
+    data = request.get_json(silent=True) or {}
     player_id = str(data.get("player_id", "unknown"))
-    is_ready = bool(data.get("ready", True))
+    ready = bool(data.get("ready", True))
 
-    if is_ready:
+    if ready:
         GAME["ready"].add(player_id)
     else:
         GAME["ready"].discard(player_id)
 
-    touch_game()
+    touch()
     return jsonify({"ok": True, "ready_count": len(GAME["ready"])})
+
 @app.route("/api/bingo", methods=["POST"])
 def api_bingo():
-    data = request.get_json(force=True)
+    data = request.get_json(silent=True) or {}
     player_id = str(data.get("player_id", "unknown"))
-    card_id = str(data.get("card_id", ""))
 
-    ts = time.strftime("%I:%M:%S %p").lstrip("0")
     GAME["bingo_calls"].appendleft({
         "player_id": player_id,
-        "card_id": card_id,
-        "time": ts
+        "time": now_label(),
     })
-
-    touch_game()
+    touch()
     return jsonify({"ok": True})
+
 @app.route("/api/reaction", methods=["POST"])
 def api_reaction():
-    data = request.get_json(force=True)
+    data = request.get_json(silent=True) or {}
     emoji = str(data.get("emoji", "👀"))
-
-    # Count it
     GAME["reactions"][emoji] += 1
-
-    touch_game()
+    touch()
     return jsonify({"ok": True, "reactions": dict(GAME["reactions"])})
-@app.route("/api/auto", methods=["POST"])
-def api_auto():
-    data = request.get_json(force=True)
-    GAME["auto_delay"] = int(data.get("delay", 0))
-    GAME["auto_enabled"] = bool(data.get("enabled", False))
-    touch_game()
-    return jsonify({"ok": True})
-@app.route("/api/auto", methods=["POST"])
-def api_auto():
-    data = request.get_json(force=True)
-    GAME["auto_delay"] = int(data.get("delay", 0))
-    GAME["auto_enabled"] = bool(data.get("enabled", False))
-    touch_game()
-    return jsonify({"ok": True})
-@app.route("/api/next", methods=["POST"])
-def api_next():
-    data = request.get_json(force=True)
-    min_ready = int(data.get("min_ready", 0))  # set to your player count if you want "all ready"
 
-    # Gate calling next ball if not enough are ready
-    if len(GAME["ready"]) < min_ready:
-        return jsonify({"ok": False, "reason": "not_ready", "ready_count": len(GAME["ready"])}), 409
+@app.route("/api/new_player_card", methods=["POST"])
+def api_new_player_card():
+    data = request.get_json(silent=True) or {}
+    player_id = str(data.get("player_id", ""))
 
-    # --- CALL YOUR EXISTING LOGIC HERE ---
-    # Example: new_ball = get_next_ball()
-    new_ball = get_next_ball()  # <-- rename this to your actual function
+    # If player_id not provided, create a new player
+    if not player_id:
+        player_id = "p_" + uuid.uuid4().hex[:10]
 
-    if not new_ball:
-        return jsonify({"ok": False, "reason": "no_balls_left"}), 409
+    PLAYER_CARDS[player_id] = generate_card()
+    touch()
+    return jsonify({
+        "ok": True,
+        "player_id": player_id,
+        "url": url_for("player_page", player_id=player_id)
+    })
 
-    GAME["called"].append(new_ball)
-    GAME["last5"].append(new_ball)
-
-    # When a ball is called, reset readiness (so players must confirm again)
-    GAME["ready"].clear()
-
-    touch_game()
-    return jsonify({"ok": True, "ball": new_ball, "last5": list(GAME["last5"])})
-
-
-app = Flask(__name__)
-
-# -----------------------------
-# Bingo Card Generator
-# -----------------------------
-def generate_card():
-    card = {}
-    ranges = {
-        "B": range(1, 16),
-        "I": range(16, 31),
-        "N": range(31, 46),
-        "G": range(46, 61),
-        "O": range(61, 76)
-    }
-
-    for letter, nums in ranges.items():
-        card[letter] = random.sample(list(nums), 5)
-
-    card["N"][2] = "FREE"
-    return card
-
-
-# -----------------------------
-# Home / Bingo Page
-# -----------------------------
-@app.route("/", methods=["GET", "POST"])
-def index():
-    if request.method == "POST":
-        name = request.form["name"]
-        count = int(request.form["count"])
-
-        prefix = name.upper().replace(" ", "")[:5]
-        cards = []
-
-        for i in range(1, count + 1):
-            card_id = f"{prefix}-{i:02d}"
-            cards.append({
-                "id": card_id,
-                "data": generate_card()
-            })
-
-        return render_template("cards.html", name=name, cards=cards)
-
-    return render_template("index.html")
-
-
-# -----------------------------
-# SHORT LINK → PLAY (PUBLIC)
-# https://your-site.onrender.com/play
-# -----------------------------
-@app.route("/play")
-def play():
-    return redirect(url_for("index"))
-
-
-# -----------------------------
-# PRIVATE CALLER PAGE (HIDDEN)
-# https://your-site.onrender.com/bingo-admin
-# -----------------------------
-@app.route("/bingo-admin")
-def caller():
-    return render_template("caller.html")
-
-
-# -----------------------------
-# OPTIONAL: SHORT LINK → DISCORD
-# -----------------------------
-# DISCORD_INVITE_URL = "https://discord.gg/YOURCODE"
-#
-# @app.route("/discord")
-# def discord():
-#     return redirect(DISCORD_INVITE_URL)
-
-
-# -----------------------------
-# Run App
-# -----------------------------
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)
+
