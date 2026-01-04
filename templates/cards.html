@@ -34,6 +34,44 @@
       100% { opacity: 0.4; }
     }
 
+    /* Controls */
+    .nav {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin: 10px auto 12px;
+      padding: 0 12px;
+      max-width: 520px;
+    }
+
+    .nav button {
+      padding: 10px 14px;
+      font-size: 16px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      background: #7d4fff;
+      color: white;
+      font-weight: bold;
+      min-width: 110px;
+    }
+
+    .nav button:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
+
+    .nav .counter {
+      font-weight: bold;
+      color: #4b2e83;
+      background: rgba(255,255,255,0.7);
+      border: 1px solid rgba(125,79,255,0.25);
+      padding: 8px 12px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
     /* Cards container (desktop) */
     .cards {
       display: flex;
@@ -111,10 +149,9 @@
 
     @media (max-width: 768px) {
 
-      /* Show swipe hint on phones */
-      .swipe-hint {
-        display: block;
-      }
+      /* Show swipe hint + nav on phones */
+      .swipe-hint { display: block; }
+      .nav { display: flex; }
 
       .cards {
         flex-wrap: nowrap;
@@ -154,14 +191,62 @@
       cell.classList.toggle("marked");
     }
 
-    // Hide swipe hint after a few seconds
+    function clamp(n, min, max) {
+      return Math.max(min, Math.min(max, n));
+    }
+
     window.addEventListener("load", () => {
       const hint = document.querySelector(".swipe-hint");
-      if (hint) {
-        setTimeout(() => {
-          hint.style.display = "none";
-        }, 5000);
+      if (hint) setTimeout(() => hint.style.display = "none", 5000);
+
+      const cardsWrap = document.querySelector(".cards");
+      const cardEls = Array.from(document.querySelectorAll(".cards .card"));
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const counter = document.getElementById("counter");
+
+      if (!cardsWrap || cardEls.length === 0) return;
+
+      let idx = 0;
+
+      function cardWidth() {
+        // width of first card + gap (gap is 12px on mobile)
+        const w = cardEls[0].getBoundingClientRect().width;
+        // Try to measure actual gap from computed style
+        const gap = parseFloat(getComputedStyle(cardsWrap).columnGap || getComputedStyle(cardsWrap).gap || "12") || 12;
+        return w + gap;
       }
+
+      function updateUI() {
+        if (counter) counter.textContent = `Card ${idx + 1} of ${cardEls.length}`;
+        if (prevBtn) prevBtn.disabled = (idx === 0);
+        if (nextBtn) nextBtn.disabled = (idx === cardEls.length - 1);
+      }
+
+      function scrollToIdx(newIdx) {
+        idx = clamp(newIdx, 0, cardEls.length - 1);
+        cardsWrap.scrollTo({ left: idx * cardWidth(), behavior: "smooth" });
+        updateUI();
+      }
+
+      // Buttons
+      if (prevBtn) prevBtn.addEventListener("click", () => scrollToIdx(idx - 1));
+      if (nextBtn) nextBtn.addEventListener("click", () => scrollToIdx(idx + 1));
+
+      // Update index when user swipes manually
+      let scrollTimer = null;
+      cardsWrap.addEventListener("scroll", () => {
+        if (scrollTimer) clearTimeout(scrollTimer);
+        scrollTimer = setTimeout(() => {
+          const w = cardWidth();
+          const newIdx = Math.round(cardsWrap.scrollLeft / w);
+          idx = clamp(newIdx, 0, cardEls.length - 1);
+          updateUI();
+        }, 80);
+      });
+
+      // Initial
+      updateUI();
     });
   </script>
 </head>
@@ -170,6 +255,13 @@
 
   <h2>🎴 Your Bingo Cards</h2>
   <div class="swipe-hint">⬅️ Swipe left / right to see your cards ➡️</div>
+
+  <!-- Prev / Next controls (shows on mobile) -->
+  <div class="nav">
+    <button id="prevBtn" type="button">◀ Prev</button>
+    <div class="counter" id="counter">Card 1 of 1</div>
+    <button id="nextBtn" type="button">Next ▶</button>
+  </div>
 
   <div class="cards">
     {% for card in cards %}
@@ -207,3 +299,4 @@
 
 </body>
 </html>
+
