@@ -120,15 +120,10 @@ def caller_page():
     return render_template("caller.html")
 
 
-@app.route("/cards", methods=["GET", "POST"])
+@app.route("/cards")
 def cards_entry():
-    """
-    POST: handles the join form from index.html (name + number of cards)
-    GET: convenience fallback (if someone visits /cards directly)
-    """
-    if request.method == "GET":
-        # If they go straight to /cards, just send them back to join page
-        return redirect(url_for("home"))
+    return redirect(url_for("home"))
+
 
     # ---- POST ----
     # These field names should match your index.html form inputs.
@@ -153,14 +148,11 @@ def cards_entry():
 
 @app.route("/cards/<player_id>")
 def player_cards(player_id):
-    # If someone refreshes with an unknown id, give them 1 card
     if player_id not in PLAYERS:
         PLAYERS[player_id] = {"name": "Player", "cards": [generate_card()]}
         touch()
 
     player = PLAYERS[player_id]
-
-    # ✅ Pass multiple cards so your existing cards.html (Prev/Next) can work
     return render_template(
         "cards.html",
         player_id=player_id,
@@ -168,6 +160,7 @@ def player_cards(player_id):
         cards=player["cards"],
         total_cards=len(player["cards"]),
     )
+
 
 
 # -----------------------------
