@@ -103,6 +103,10 @@ new_game()
 def home():
     return redirect("/cards")
 
+@app.route("/cards")
+def cards_page():
+    return render_template("cards.html")
+
 
 @app.route("/caller")
 def caller_page():
