@@ -100,8 +100,13 @@ new_game()
 # -----------------------------
 @app.route("/")
 def home():
-    # Simple landing page with links
-    return render_template("home.html")
+    # Just redirect the root to the caller page
+    return """
+    <script>
+      window.location.href = "/caller";
+    </script>
+    """
+
 
 @app.route("/caller")
 def caller_page():
